@@ -1,0 +1,49 @@
+name: Build Android APK from single file
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Grab your main.dart from your GitHub repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up Java (required for Android)
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 3. Set up the Flutter SDK
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      # 4. THE MAGIC STEP: Create a full Flutter project on the fly
+      - name: Generate Flutter Environment
+        run: |
+          # Create a new blank Flutter project named 'temp_app'
+          flutter create temp_app
+          
+          # Copy YOUR main.dart into the new project, overwriting the default one
+          cp main.dart temp_app/lib/main.dart
+
+      # 5. Build the APK inside the generated 'temp_app' folder
+      - name: Build APK
+        working-directory: ./temp_app
+        run: flutter build apk --release
+
+      # 6. Upload the generated APK so you can download it
+      - name: Upload APK File
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: temp_app/build/app/outputs/flutter-apk/app-release.apk
